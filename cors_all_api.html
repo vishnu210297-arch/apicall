@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Call Example</title>
+    <script>
+        async function fetchData(username = '', password = '') {
+            const apiUrl = 'https://boomisit.merckgroup.com/ws/rest/boomi/ping'; // API endpoint
+
+            try {
+                const headers = {
+                    'Content-Type': 'application/json',
+                };
+
+                // If username and password are provided, add Basic Auth header
+                if (username && password) {
+                    const base64Credentials = btoa(`${username}:${password}`);
+                    headers['Authorization'] = `Basic ${base64Credentials}`;
+                }
+
+                const response = await fetch(apiUrl, {
+                    method: 'GET', // HTTP method
+                    headers: headers
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('result').innerText = 'Success: ' + JSON.stringify(data, null, 2);
+                } else if (response.status === 401) {
+                    // Handle 401 Unauthorized error
+                    promptForCredentials();
+                } else {
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+            } catch (error) {
+                console.error('There was a problem with the fetch operation:', error);
+                document.getElementById('result').innerText = 'Error: ' + error.message;
+            }
+        }
+
+        function promptForCredentials() {
+            const username = prompt("Enter your username:");
+            const password = prompt("Enter your password:");
+
+            if (username && password) {
+                fetchData(username, password); // Retry the API call with credentials
+            } else {
+                document.getElementById('result').innerText = 'Authentication required, but no credentials provided.';
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>API Call Example</h1>
+    <button onclick="fetchData()">Call API</button>
+    <pre id="result"></pre>
+</body>
+</html>
