@@ -5,33 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>API Call Example</title>
     <script>
-        async function fetchData(username = '', password = '') {
+        async function fetchData() {
             const apiUrl = 'https://boomisit.merckgroup.com/ws/rest/boomi/ping'; // API endpoint
 
             try {
-                const headers = {
-                    'Content-Type': 'application/json',
-                };
-
-                // If username and password are provided, add Basic Auth header
-                if (username && password) {
-                    const base64Credentials = btoa(`${username}:${password}`);
-                    headers['Authorization'] = `Basic ${base64Credentials}`;
-                }
-
                 const response = await fetch(apiUrl, {
-                    method: 'GET', // HTTP method
-                    headers: headers
+                    method: 'GET', // Use GET method
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded' // Use a simple content type
+                        // No custom headers to avoid preflight
+                    }
                 });
 
                 if (response.ok) {
                     const data = await response.json();
                     document.getElementById('result').innerText = 'Success: ' + JSON.stringify(data, null, 2);
                 } else if (response.status === 401) {
-                    // Handle 401 Unauthorized error
                     promptForCredentials();
                 } else {
-                    throw new Error('Network response was not ok: ' + response.statusText);
+                    const errorText = await response.text(); // Get the error text from the response
+                    throw new Error(`Network response was not ok: ${response.status} - ${response.statusText}. Error details: ${errorText}`);
                 }
             } catch (error) {
                 console.error('There was a problem with the fetch operation:', error);
@@ -44,9 +37,35 @@
             const password = prompt("Enter your password:");
 
             if (username && password) {
-                fetchData(username, password); // Retry the API call with credentials
+                fetchDataWithAuth(username, password); // Retry the API call with Basic Auth
             } else {
                 document.getElementById('result').innerText = 'Authentication required, but no credentials provided.';
+            }
+        }
+
+        async function fetchDataWithAuth(username, password) {
+            const apiUrl = 'https://boomisit.merckgroup.com/ws/rest/boomi/ping'; // API endpoint
+
+            try {
+                const base64Credentials = btoa(`${username}:${password}`);
+                const response = await fetch(apiUrl, {
+                    method: 'GET', // Use GET method
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded', // Use a simple content type
+                        'Authorization': `Basic ${base64Credentials}` // This will trigger a preflight
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('result').innerText = 'Success: ' + JSON.stringify(data, null, 2);
+                } else {
+                    const errorText = await response.text(); // Get the error text from the response
+                    throw new Error(`Network response was not ok: ${response.status} - ${response.statusText}. Error details: ${errorText}`);
+                }
+            } catch (error) {
+                console.error('There was a problem with the fetch operation:', error);
+                document.getElementById('result').innerText = 'Error: ' + error.message;
             }
         }
     </script>
